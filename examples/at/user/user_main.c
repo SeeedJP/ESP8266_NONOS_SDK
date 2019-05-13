@@ -29,7 +29,9 @@
 #if ((SPI_FLASH_SIZE_MAP == 0) || (SPI_FLASH_SIZE_MAP == 1))
 #error "The flash map is not supported"
 #elif (SPI_FLASH_SIZE_MAP == 2)
+#ifdef AT_UPGRADE_SUPPORT	// FOTA
 #error "The flash map is not supported"
+#endif
 #elif (SPI_FLASH_SIZE_MAP == 3)
 #error "The flash map is not supported"
 #elif (SPI_FLASH_SIZE_MAP == 4)
@@ -148,6 +150,28 @@ at_funcationType at_custom_cmd[] = {
 #endif
 };
 
+#if (SPI_FLASH_SIZE_MAP == 2) && !defined(AT_UPGRADE_SUPPORT)
+
+#define EAGLE_FLASH_BIN					(SYSTEM_PARTITION_CUSTOMER_BEGIN + 1)
+#define EAGLE_IROM0TEXT_BIN				(SYSTEM_PARTITION_CUSTOMER_BEGIN + 2)
+
+static const partition_item_t at_partition_table[] = {
+    { EAGLE_FLASH_BIN                              , 0x00000, 0x10000 },
+    { EAGLE_IROM0TEXT_BIN                          , 0x10000, 0xb8000 },
+    { SYSTEM_PARTITION_RF_CAL                      , 0xfb000, 0x1000  },
+    { SYSTEM_PARTITION_PHY_DATA                    , 0xfc000, 0x1000  },
+    { SYSTEM_PARTITION_SYSTEM_PARAMETER            , 0xfd000, 0x3000  },
+    { SYSTEM_PARTITION_AT_PARAMETER                , 0xf8000, 0x3000  },
+    { SYSTEM_PARTITION_SSL_CLIENT_CERT_PRIVKEY     , 0xf7000, 0x1000  },
+    { SYSTEM_PARTITION_SSL_CLIENT_CA               , 0xf6000, 0x1000  },
+#ifdef CONFIG_AT_WPA2_ENTERPRISE_COMMAND_ENABLE
+    { SYSTEM_PARTITION_WPA2_ENTERPRISE_CERT_PRIVKEY, 0xf5000, 0x1000  },
+    { SYSTEM_PARTITION_WPA2_ENTERPRISE_CA          , 0xf4000, 0x1000  },
+#endif
+};
+
+#else
+
 static const partition_item_t at_partition_table[] = {
     { SYSTEM_PARTITION_BOOTLOADER, 						0x0, 												0x1000},
     { SYSTEM_PARTITION_OTA_1,   						0x1000, 											SYSTEM_PARTITION_OTA_SIZE},
@@ -163,6 +187,8 @@ static const partition_item_t at_partition_table[] = {
     { SYSTEM_PARTITION_WPA2_ENTERPRISE_CA, 				SYSTEM_PARTITION_WPA2_ENTERPRISE_CA_ADDR, 			0x1000},
 #endif
 };
+
+#endif
 
 void ICACHE_FLASH_ATTR user_pre_init(void)
 {
